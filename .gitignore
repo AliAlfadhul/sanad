@@ -1,0 +1,11 @@
+node_modules/
+.env
+run.bat
+.angular/
+dist/
+backend/data/index.json
+backend/data/documents/*
+!backend/data/documents/account-terms.md
+!backend/data/documents/fee-schedule.md
+!backend/data/documents/card-policy.md
+!backend/data/documents/complaints-procedure.md

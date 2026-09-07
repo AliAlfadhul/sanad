@@ -1,0 +1,117 @@
+<div class="copilot" [dir]="dir">
+  <header class="copilot__header">
+    <div>
+      <p class="copilot__eyebrow">Sanad · سند</p>
+      <h1 class="copilot__title">{{ lang() === 'ar' ? 'اسأل عن سياساتنا' : 'Ask about our policies' }}</h1>
+    </div>
+    <button type="button" class="copilot__lang" (click)="toggleLang()" [attr.aria-pressed]="lang() === 'ar'">
+      {{ lang() === 'ar' ? 'English' : 'العربية' }}
+    </button>
+  </header>
+
+  @if (documents().length) {
+    <div class="library">
+      <span class="library__label">{{ lang() === 'ar' ? 'المستندات المفهرسة' : 'Indexed documents' }}</span>
+      <div class="library__chips">
+        @for (doc of documents(); track doc.id) {
+          <span class="library__chip">{{ doc.title }}</span>
+        }
+        <button type="button" class="library__add" (click)="showAddDoc.set(!showAddDoc())">
+          {{ showAddDoc() ? (lang() === 'ar' ? 'إلغاء' : 'Cancel') : (lang() === 'ar' ? '+ إضافة مستند' : '+ Add document') }}
+        </button>
+      </div>
+    </div>
+  } @else if (documentsError()) {
+    <div class="library library--error">
+      {{ lang() === 'ar' ? 'تعذر تحميل فهرس المستندات. شغّل "npm run ingest" أولاً.' : 'Could not load the document index. Run "npm run ingest" first.' }}
+    </div>
+  }
+
+  @if (showAddDoc()) {
+    <form class="add-doc" (ngSubmit)="submitDocument()">
+      <input
+        type="text"
+        [(ngModel)]="newDocTitle"
+        name="docTitle"
+        [placeholder]="lang() === 'ar' ? 'عنوان المستند، مثال: سياسة التحويل البنكي' : 'Document title, e.g. Wire Transfer Policy'"
+      />
+      <textarea
+        [(ngModel)]="newDocContent"
+        name="docContent"
+        rows="4"
+        [placeholder]="lang() === 'ar' ? 'الصق نص السياسة هنا...' : 'Paste the policy text here...'"
+      ></textarea>
+      @if (addDocError()) {
+        <p class="add-doc__error">{{ addDocError() }}</p>
+      }
+      <button type="submit" [disabled]="addingDoc() || !newDocTitle.trim() || !newDocContent.trim()">
+        {{ addingDoc() ? (lang() === 'ar' ? 'جارٍ الفهرسة…' : 'Indexing…') : (lang() === 'ar' ? 'أضف إلى الفهرس' : 'Add to index') }}
+      </button>
+
+      <div class="add-doc__divider">{{ lang() === 'ar' ? 'أو' : 'or' }}</div>
+
+      <label class="add-doc__file">
+        {{ uploadingPdf() ? (lang() === 'ar' ? 'جارٍ الرفع والفهرسة…' : 'Uploading and indexing…') : (lang() === 'ar' ? 'رفع ملف PDF' : 'Upload a PDF') }}
+        <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" [disabled]="uploadingPdf()" hidden />
+      </label>
+      @if (pdfError()) {
+        <p class="add-doc__error">{{ pdfError() }}</p>
+      }
+    </form>
+  }
+
+  <div class="copilot__ledger">
+    @for (msg of messages(); track $index) {
+      <div class="entry" [class.entry--user]="msg.role === 'user'">
+        <p class="entry__text" [innerHTML]="formatMessage(msg.text)"></p>
+
+        @if (msg.sources && msg.sources.length) {
+          <div class="entry__sources">
+            @for (src of msg.sources; track src.docTitle + src.sectionTitle) {
+              <span class="source">
+                <svg class="source__mark" viewBox="0 0 16 16" width="11" height="11">
+                  <path d="M3 8.5L6.5 12L13 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                {{ src.docTitle }} · {{ src.sectionTitle }}
+              </span>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (!messages().length && !loading()) {
+      <div class="copilot__empty">
+        <svg class="copilot__empty-icon" viewBox="0 0 40 40" width="36" height="36">
+          <rect x="8" y="4" width="24" height="32" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" />
+          <line x1="13" y1="13" x2="27" y2="13" stroke="currentColor" stroke-width="1.5" />
+          <line x1="13" y1="19" x2="27" y2="19" stroke="currentColor" stroke-width="1.5" />
+          <line x1="13" y1="25" x2="22" y2="25" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        <p>{{ lang() === 'ar' ? 'جرّب سؤالاً مثل:' : 'Try asking:' }}</p>
+        <button type="button" class="copilot__example" (click)="useExample()">{{ exampleQuestion }}</button>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="entry">
+        <p class="entry__text entry__text--pending">
+          {{ lang() === 'ar' ? 'جارٍ البحث في المستندات…' : 'Searching the documents…' }}
+        </p>
+      </div>
+    }
+  </div>
+
+  <form class="copilot__input" (ngSubmit)="submit()">
+    <input
+      type="text"
+      [(ngModel)]="input"
+      name="message"
+      [attr.aria-label]="lang() === 'ar' ? 'اكتب سؤالك' : 'Type your question'"
+      [placeholder]="lang() === 'ar' ? 'مثال: ماذا يحدث إن لم أُفعّل بطاقتي في الوقت المحدد؟' : 'e.g. what happens if I don\'t activate my card in time?'"
+    />
+    <button type="submit" [disabled]="loading() || !input.trim()">
+      {{ lang() === 'ar' ? 'اسأل' : 'Ask' }}
+    </button>
+  </form>
+</div>
